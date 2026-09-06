@@ -137,8 +137,7 @@
   <div class="toast" id="toast" role="alert"></div>
 
   <script>
-    // Replace these values before deploying. Public browser apps cannot keep API keys secret.
-    const GEMINI_API_KEY = "AQ.Ab8RN6L8txpOAyg65W83fXrMiLUP4w4BA__qkdOIyH1E6lJZQ";
+    const GEMINI_API_KEY = "AQ.Ab8RN6L8txpOAvg65W83NfXrMiLUP4w4BA__qkdOIyH1E6lJZQ";
     const GROK_API_KEY = "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";
     const MAX_ROUNDS = 5;
     const GEMINI_MODEL = "gemini-1.5-flash";
@@ -208,7 +207,15 @@
 
     async function askGemini(prompt) {
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
-      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] }) });
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-goog-api-key": GEMINI_API_KEY
+        },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
+      });
+
       const data = await readResponse(response, "Gemini");
       const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
       if (!text) throw new Error("Gemini returned no usable content.");
