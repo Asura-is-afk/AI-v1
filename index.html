@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>AI Debater / Code Optimizer</title>
+  <style>
+    :root {
+      --bg: #080b12;
+      --panel: rgba(16, 22, 34, .78);
+      --panel-strong: rgba(20, 28, 43, .94);
+      --line: rgba(142, 170, 207, .18);
+      --text: #edf3ff;
+      --muted: #8e9bb1;
+      --cyan: #5be7ff;
+      --cyan-soft: rgba(91, 231, 255, .13);
+      --amber: #ffbf69;
+      --green: #6fffb0;
+      --red: #ff7f9f;
+      --shadow: 0 26px 80px rgba(0, 0, 0, .38);
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(43, 105, 137, .2), transparent 32rem),
+        radial-gradient(circle at 90% 12%, rgba(101, 62, 151, .16), transparent 28rem),
+        linear-gradient(145deg, #080b12 0%, #0d111b 48%, #090d15 100%);
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      opacity: .3;
+      background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(to bottom, black, transparent 88%);
+    }
+
+    button, textarea, input { font: inherit; }
+    button { cursor: pointer; }
+    .app { width: min(1440px, calc(100% - 40px)); margin: 0 auto; padding: 34px 0 64px; }
+    .topline, .brand, .status-copy, .panel-heading, .final-heading, .toolbar { display: flex; align-items: center; }
+    .topline { justify-content: space-between; gap: 24px; margin-bottom: 52px; }
+    .brand { gap: 13px; }
+    .mark { width: 34px; height: 34px; border: 1px solid var(--cyan); transform: rotate(45deg); position: relative; box-shadow: 0 0 22px rgba(91,231,255,.3); }
+    .mark::after { content: ""; position: absolute; inset: 7px; border: 1px solid var(--amber); }
+    .eyebrow { color: var(--cyan); font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+    .brand-name { margin-top: 4px; font-size: 18px; font-weight: 650; letter-spacing: .02em; }
+    .signal { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .signal-dot { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
+    .hero { max-width: 880px; margin-bottom: 34px; }
+    h1 { max-width: 780px; margin: 0 0 15px; font-size: clamp(36px, 6vw, 78px); line-height: .96; letter-spacing: -.055em; font-weight: 600; }
+    h1 span { color: var(--cyan); }
+    .subtitle { max-width: 670px; margin: 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
+    .request-box, .panel, .final-card { border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow); backdrop-filter: blur(18px); }
+    .request-box { padding: 18px; border-radius: 14px; }
+    .input-label { display: block; margin: 0 0 10px 2px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    textarea { width: 100%; min-height: 115px; resize: vertical; border: 1px solid var(--line); border-radius: 9px; padding: 16px; outline: none; color: var(--text); background: rgba(3, 6, 11, .55); line-height: 1.55; }
+    textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); }
+    .request-actions { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 14px; }
+    .hint { color: var(--muted); font-size: 12px; }
+    .primary, .ghost { border-radius: 7px; padding: 11px 16px; font-weight: 700; transition: .2s ease; }
+    .primary { border: 1px solid var(--cyan); color: #031017; background: var(--cyan); box-shadow: 0 0 20px rgba(91,231,255,.18); }
+    .primary:hover { background: #b3f5ff; transform: translateY(-1px); }
+    .primary:disabled { cursor: wait; opacity: .55; transform: none; }
+    .ghost { border: 1px solid var(--line); color: var(--text); background: transparent; }
+    .ghost:hover { border-color: var(--cyan); color: var(--cyan); }
+    .statusbar { justify-content: space-between; gap: 18px; margin: 26px 0 18px; padding: 13px 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .status-copy { gap: 10px; min-width: 0; }
+    .status-led { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--amber); box-shadow: 0 0 13px var(--amber); }
+    .status-led.ready { background: var(--cyan); box-shadow: 0 0 13px var(--cyan); }
+    .status-led.success { background: var(--green); box-shadow: 0 0 13px var(--green); }
+    .status-led.error { background: var(--red); box-shadow: 0 0 13px var(--red); }
+    #statusText { overflow: hidden; color: var(--muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+    #roundText { color: var(--cyan); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .panel { min-height: 380px; overflow: hidden; border-radius: 12px; }
+    .panel-heading { justify-content: space-between; gap: 16px; padding: 15px 18px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.025); }
+    .agent-name { font-size: 14px; font-weight: 700; }
+    .agent-role { margin-top: 4px; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .agent-badge { color: var(--cyan); font-size: 12px; }
+    .grok .agent-badge { color: var(--amber); }
+    .transcript { display: flex; flex-direction: column; gap: 12px; max-height: 490px; min-height: 300px; overflow: auto; padding: 18px; }
+    .empty { margin: auto; max-width: 260px; color: #68768c; font-size: 13px; line-height: 1.6; text-align: center; }
+    .message { padding: 13px 14px; border: 1px solid var(--line); border-left: 2px solid var(--cyan); border-radius: 7px; color: #c8d4e8; font-size: 13px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; animation: rise .3s ease both; }
+    .grok .message { border-left-color: var(--amber); }
+    .message-label { display: block; margin-bottom: 7px; color: var(--cyan); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    .grok .message-label { color: var(--amber); }
+    .final-card { margin-top: 16px; overflow: hidden; border-radius: 12px; }
+    .final-heading { justify-content: space-between; gap: 16px; padding: 17px 18px; border-bottom: 1px solid var(--line); }
+    .final-title { font-size: 14px; font-weight: 700; }
+    .final-state { margin-top: 4px; color: var(--muted); font-size: 11px; }
+    pre { min-height: 160px; max-height: 520px; overflow: auto; margin: 0; padding: 20px; color: #d6f3ff; background: rgba(2, 5, 9, .7); font: 12px/1.7 Consolas, "Courier New", monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .token-keyword { color: #ff9fca; } .token-string { color: #b9e986; } .token-comment { color: #74839b; } .token-number { color: #ffc777; }
+    .toast { position: fixed; right: 22px; bottom: 22px; max-width: min(420px, calc(100vw - 44px)); padding: 13px 16px; border: 1px solid var(--red); border-radius: 8px; color: #ffd8e2; background: #25121c; box-shadow: var(--shadow); opacity: 0; transform: translateY(14px); pointer-events: none; transition: .25s ease; }
+    .toast.visible { opacity: 1; transform: translateY(0); }
+    @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 760px) { .app { width: min(100% - 24px, 600px); padding-top: 22px; } .topline { margin-bottom: 38px; } .signal { display: none; } .panels { grid-template-columns: 1fr; } .request-actions { align-items: stretch; flex-direction: column; } .primary { width: 100%; } .hint { order: 2; } .statusbar { align-items: flex-start; flex-direction: column; } #statusText { white-space: normal; } h1 { font-size: 46px; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topline">
+      <div class="brand"><div class="mark" aria-hidden="true"></div><div><div class="eyebrow">Multi-agent workspace</div><div class="brand-name">AI Debater / Code Optimizer</div></div></div>
+      <div class="signal"><span class="signal-dot"></span>Direct browser relay</div>
+    </header>
+
+    <section class="hero">
+      <h1>Make the code<br><span>defend itself.</span></h1>
+      <p class="subtitle">Gemini builds. Grok audits. An adversarial review loop turns your prompt into a cleaner, more resilient implementation.</p>
+    </section>
+
+    <section class="request-box" aria-label="Coding request">
+      <label class="input-label" for="request">Your coding request</label>
+      <textarea id="request" placeholder="Describe the feature, bug, or code you want the agents to solve..." spellcheck="false"></textarea>
+      <div class="request-actions"><span class="hint">Maximum 5 review rounds · approval requires an exact status tag</span><button class="primary" id="startButton" type="button">Start debate <span aria-hidden="true">→</span></button></div>
+    </section>
+
+    <section class="statusbar" aria-live="polite"><div class="status-copy"><span class="status-led ready" id="statusLed"></span><span id="statusText">Ready for a coding request.</span></div><span id="roundText">Loop 0 of 5</span></section>
+
+    <section class="panels" aria-label="Agent transcripts">
+      <article class="panel gemini"><div class="panel-heading"><div><div class="agent-name">Agent A: Gemini</div><div class="agent-role">The Coder</div></div><div class="agent-badge">BUILD / REVISE</div></div><div class="transcript" id="geminiLog"><div class="empty">The coder's implementation will appear here.</div></div></article>
+      <article class="panel grok"><div class="panel-heading"><div><div class="agent-name">Agent B: Grok</div><div class="agent-role">The Critic / QA Auditor</div></div><div class="agent-badge">AUDIT / APPROVE</div></div><div class="transcript" id="grokLog"><div class="empty">The auditor's review will appear here.</div></div></article>
+    </section>
+
+    <section class="final-card"><div class="final-heading"><div><div class="final-title">Final Approved Code</div><div class="final-state" id="finalState">No approved solution yet.</div></div><button class="ghost" id="copyButton" type="button">Copy code</button></div><pre id="codeOutput"><code>Waiting for the debate to produce a solution.</code></pre></section>
+  </main>
+  <div class="toast" id="toast" role="alert"></div>
+
+  <script>
+    // Replace these values before deploying. Public browser apps cannot keep API keys secret.
+    const GEMINI_API_KEY = "AQ.Ab8RN6L8txpOAyg65W83fXrMiLUP4w4BA__qkdOIyH1E6lJZQ";
+    const GROK_API_KEY = "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";
+    const MAX_ROUNDS = 5;
+    const GEMINI_MODEL = "gemini-1.5-flash";
+    const GROK_MODEL = "grok-3-mini-fast";
+
+    const $ = (selector) => document.querySelector(selector);
+    const requestInput = $("#request");
+    const startButton = $("#startButton");
+    const copyButton = $("#copyButton");
+    const geminiLog = $("#geminiLog");
+    const grokLog = $("#grokLog");
+    const statusText = $("#statusText");
+    const statusLed = $("#statusLed");
+    const roundText = $("#roundText");
+    const codeOutput = $("#codeOutput code");
+    const finalState = $("#finalState");
+    const toast = $("#toast");
+    let latestCode = "";
+    let toastTimer;
+
+    function setStatus(message, state = "ready", round = 0) {
+      statusText.textContent = message;
+      roundText.textContent = `Loop ${round} of ${MAX_ROUNDS}`;
+      statusLed.className = `status-led ${state}`;
+    }
+
+    function showError(message) {
+      setStatus(message, "error");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 6500);
+    }
+
+    function resetLog(log, emptyText) {
+      log.innerHTML = `<div class="empty">${emptyText}</div>`;
+    }
+
+    function addMessage(log, label, text) {
+      const empty = log.querySelector(".empty");
+      if (empty) empty.remove();
+      const message = document.createElement("div");
+      message.className = "message";
+      const messageLabel = document.createElement("span");
+      messageLabel.className = "message-label";
+      messageLabel.textContent = label;
+      message.append(messageLabel, document.createTextNode(text));
+      log.append(message);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function requireKeys() {
+      if (!GEMINI_API_KEY || !GROK_API_KEY || GEMINI_API_KEY.includes("YOUR_") || GROK_API_KEY.includes("YOUR_")) {
+        throw new Error("Add both API keys in the configuration block before starting a debate.");
+      }
+    }
+
+    async function readResponse(response, service) {
+      let data;
+      try { data = await response.json(); } catch { throw new Error(`${service} returned an unreadable response (${response.status}).`); }
+      if (!response.ok) {
+        const detail = data?.error?.message || data?.message || `HTTP ${response.status}`;
+        throw new Error(`${service} request failed: ${detail}`);
+      }
+      return data;
+    }
+
+    async function askGemini(prompt) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] }) });
+      const data = await readResponse(response, "Gemini");
+      const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
+      if (!text) throw new Error("Gemini returned no usable content.");
+      return text;
+    }
+
+    async function askGrok(messages) {
+      const response = await fetch("https://api.x.ai/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROK_API_KEY}` }, body: JSON.stringify({ model: GROK_MODEL, temperature: 0.2, messages }) });
+      const data = await readResponse(response, "Grok");
+      const text = data?.choices?.[0]?.message?.content?.trim();
+      if (!text) throw new Error("Grok returned no usable content.");
+      return text;
+    }
+
+    function extractCode(text) {
+      const match = text.match(/```(?:[\w+#.-]+)?\s*([\s\S]*?)```/);
+      return (match ? match[1] : text).trim();
+    }
+
+    function highlight(code) {
+      const escaped = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return escaped.replace(/(\/\/.*$|\/\*[\s\S]*?\*\/|#[^\n]*)/gm, '<span class="token-comment">$1</span>').replace(/(&quot;.*?&quot;|&#39;.*?&#39;|&quot;.*?&quot;|`.*?`)/g, '<span class="token-string">$1</span>').replace(/\b(const|let|var|function|return|if|else|for|while|class|new|async|await|try|catch|throw|import|from|export|def|in|True|False|None)\b/g, '<span class="token-keyword">$1</span>').replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="token-number">$1</span>');
+    }
+
+    async function runDebate() {
+      const userRequest = requestInput.value.trim();
+      if (!userRequest) { showError("Describe a coding request before starting the debate."); requestInput.focus(); return; }
+      try { requireKeys(); } catch (error) { showError(error.message); return; }
+
+      startButton.disabled = true;
+      startButton.textContent = "Debating...";
+      resetLog(geminiLog, "The coder's implementation will appear here.");
+      resetLog(grokLog, "The auditor's review will appear here.");
+      latestCode = "";
+      codeOutput.textContent = "Agents are preparing a solution...";
+      finalState.textContent = "Debate in progress.";
+      setStatus("Gemini is drafting the initial implementation...", "ready", 1);
+
+      try {
+        let code = extractCode(await askGemini(`You are Gemini, the implementation engineer. Solve this coding request:\n\n${userRequest}\n\nReturn the complete implementation in one fenced code block. Include no lengthy explanation.`));
+        latestCode = code;
+        addMessage(geminiLog, "Draft implementation", code);
+
+        for (let round = 1; round <= MAX_ROUNDS; round += 1) {
+          setStatus(`Grok is auditing round ${round}...`, "ready", round);
+          const critique = await askGrok([{ role: "system", content: "You are Grok, a strict senior QA auditor. Inspect the proposed code for syntax, correctness, performance, edge cases, and security. If it is fully correct, include the exact text STATUS: APPROVED. Otherwise provide actionable fixes and do not approve." }, { role: "user", content: `Original request:\n${userRequest}\n\nProposed code:\n${code}` }]);
+          addMessage(grokLog, `Round ${round} audit`, critique);
+          if (critique.includes("STATUS: APPROVED")) {
+            latestCode = code;
+            codeOutput.innerHTML = highlight(code);
+            finalState.textContent = `Approved by Grok after ${round} round${round === 1 ? "" : "s"}.`;
+            setStatus("Consensus reached. Final code approved.", "success", round);
+            return;
+          }
+          if (round === MAX_ROUNDS) break;
+          setStatus(`Gemini is revising after Grok's round ${round} audit...`, "ready", round + 1);
+          code = extractCode(await askGemini(`You are Gemini, revising an implementation after a rigorous QA audit.\n\nOriginal request:\n${userRequest}\n\nCurrent code:\n${code}\n\nGrok's critique:\n${critique}\n\nReturn the complete corrected implementation in one fenced code block. Apply every valid fix and include no lengthy explanation.`));
+          latestCode = code;
+          addMessage(geminiLog, `Revision ${round}`, code);
+        }
+        latestCode = code;
+        codeOutput.innerHTML = highlight(code);
+        finalState.textContent = `Best candidate after ${MAX_ROUNDS} rounds; explicit approval was not reached.`;
+        setStatus("Maximum rounds reached without approval.", "error", MAX_ROUNDS);
+      } catch (error) {
+        showError(error.message || "The debate stopped because of an unknown API error.");
+        finalState.textContent = "Debate interrupted by an API error.";
+      } finally {
+        startButton.disabled = false;
+        startButton.innerHTML = "Start debate <span aria-hidden=\"true\">→</span>";
+      }
+    }
+
+    startButton.addEventListener("click", runDebate);
+    requestInput.addEventListener("keydown", (event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") runDebate(); });
+    copyButton.addEventListener("click", async () => {
+      if (!latestCode) { showError("There is no generated code to copy yet."); return; }
+      try { await navigator.clipboard.writeText(latestCode); copyButton.textContent = "Copied"; setTimeout(() => { copyButton.textContent = "Copy code"; }, 1800); } catch { showError("Clipboard access was blocked by the browser."); }
+    });
+  </script>
+</body>
+</html>
